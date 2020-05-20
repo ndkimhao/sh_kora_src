@@ -18,12 +18,18 @@ template<typename T> using vec = std::vector<T>;
 
 #ifndef NDEBUG
 
-#include <iostream>
-#include <fmt/format.h>
+#  include <iostream>
+#  include <fmt/format.h>
 
-#define DBG(f, ...) std::cerr << fmt::format(f "\n", ##__VA_ARGS__)
+#  define DBG(f, ...) std::cerr << fmt::format(f "\n", ##__VA_ARGS__)
+
 #else
-#define DBG(...)
+
+#  define DBG(...)
+
 #endif
+
+#include <cassert>
+#define CHECK(...) assert(__VA_ARGS__)
 
 #endif //SH_KORA_COMMON_H

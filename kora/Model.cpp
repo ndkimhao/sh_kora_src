@@ -30,7 +30,43 @@ void Model::load_from_json(str json) {
 
     Document doc;
     doc.ParseInsitu(json.data());
-    
+
+    {
+        const auto &am = doc["metabolites"].GetArray();
+        metabolites_.reserve(am.Size());
+        int id = 0;
+        for (const auto &m : am) {
+            str sid = m["id"].GetString();
+            metabolites_.emplace_back(id, sid);
+            map_metabolites_.emplace(sid, id);
+            id++;
+        }
+    }
+    {
+        const auto &ar = doc["reactions"].GetArray();
+        reactions_.reserve(ar.Size());
+        int id = 0;
+        for (const auto &m : ar) {
+            str sid = m["id"].GetString();
+            double lb = m["lower_bound"].GetDouble();
+            double ub = m["upper_bound"].GetDouble();
+            reactions_.emplace_back(id, sid, Reaction::Bounds{lb, ub});
+            map_reactions_.emplace(sid, id);
+            id++;
+        }
+    }
+}
+
+int Model::get_reaction_id(const str &sid) const {
+    const auto it = map_reactions_.find(sid);
+    CHECK(it != map_reactions_.end());
+    return it->second;
+}
+
+int Model::get_metabolites_id(const str &sid) const {
+    const auto it = map_metabolites_.find(sid);
+    CHECK(it != map_metabolites_.end());
+    return it->second;
 }
 
 }

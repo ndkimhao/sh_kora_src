@@ -7,18 +7,21 @@
 
 #include <kora/common.h>
 
+#include <utility>
+
 namespace kora {
 
 class Metabolite {
 public:
-    Metabolite(str id, str name) : id_(std::move(id)), name_(std::move(name)) {}
+    Metabolite(int id, str sid) : id_(id), sid_(std::move(sid)) {}
 
-    [[nodiscard]] const str &id() const { return id_; }
+    [[nodiscard]] int id() const { return id_; }
 
-    [[nodiscard]] const str &name() const { return name_; }
+    [[nodiscard]] const str &sid() const { return sid_; }
 
 private:
-    str id_, name_;
+    int id_;
+    str sid_;
 };
 
 }

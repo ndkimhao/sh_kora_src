@@ -18,18 +18,17 @@ public:
     };
 
 public:
-    Reaction(str id, str name) : id_(move(id)), name_(move(name)), bounds_{-1000, 1000} {}
+    Reaction(int id, str sid, const Bounds &bounds) : id_(id), sid_(std::move(sid)), bounds_(bounds) {}
 
-    Reaction(str id, str name, const Bounds &bounds) : id_(move(id)), name_(move(name)), bounds_(bounds) {}
+    [[nodiscard]] int id() const { return id_; }
 
-    [[nodiscard]] const str &id() const { return id_; }
-
-    [[nodiscard]] const str &name() const { return name_; }
+    [[nodiscard]] const str &sid() const { return sid_; }
 
     [[nodiscard]] const Bounds &bounds() const { return bounds_; }
 
 private:
-    str id_, name_;
+    int id_;
+    str sid_;
     Bounds bounds_;
 };
 

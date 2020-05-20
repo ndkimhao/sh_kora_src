@@ -19,10 +19,16 @@ public:
 
     void load_from_json(str json);
 
+protected:
+    [[nodiscard]] int get_reaction_id(const str &sid) const;
+
+    [[nodiscard]] int get_metabolites_id(const str &sid) const;
+
 private:
-    str id_, name_;
-    tsl::robin_map<str, Reaction> reactions_;
-    tsl::robin_map<str, Metabolite> metabolites_;
+    vec<Reaction> reactions_;
+    vec<Metabolite> metabolites_;
+    tsl::robin_map<str, int> map_reactions_;
+    tsl::robin_map<str, int> map_metabolites_;
 };
 
 }
