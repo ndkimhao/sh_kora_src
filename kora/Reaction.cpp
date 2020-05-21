@@ -11,14 +11,14 @@ namespace kora {
 const double DINF = 1e300;
 
 void col_bnds(glp_prob *lp, int j, double lb, double ub) {
-    assert(lb <= ub);
+    CHECK(lb <= ub);
     int type = -1;
     if (lb == -DINF && ub == DINF) type = GLP_FR;
     else if (lb != -DINF && ub != DINF) type = (lb == ub) ? GLP_FX : GLP_DB;
     else if (lb != -DINF) type = GLP_LO;
     else if (ub != DINF) type = GLP_UP;
     else
-        assert(0);
+        CHECK(0);
 
     glp_set_col_bnds(lp, j, type, lb, ub);
 }
@@ -26,7 +26,7 @@ void col_bnds(glp_prob *lp, int j, double lb, double ub) {
 void Reaction::setup_column(glp_prob *lp) const {
     glp_set_col_name(lp, fwd_id(), sid().c_str());
     glp_set_col_name(lp, rev_id(), sid_rev().c_str());
-    assert(bounds_.lower <= bounds_.upper);
+    CHECK(bounds_.lower <= bounds_.upper);
     if (bounds_.lower > 0) {
         col_bnds(lp, fwd_id(), bounds_.lower, bounds_.upper);
         col_bnds(lp, rev_id(), 0, 0);

@@ -3,7 +3,7 @@ project(sh_kora)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(sh_kora kora/Model.cpp kora/Model.h kora/common.h kora/Reaction.cpp kora/Reaction.h kora/Metabolite.cpp kora/Metabolite.h kora/utils.cpp kora/utils.h)
+add_executable(sh_kora kora/Model.cpp kora/Model.h kora/common.h kora/Reaction.cpp kora/Reaction.h kora/Metabolite.cpp kora/Metabolite.h kora/utils.cpp kora/utils.h kora/common.cpp)
 
 target_include_directories(sh_kora PUBLIC
         .

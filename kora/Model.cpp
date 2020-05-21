@@ -5,8 +5,6 @@
 #include "Model.h"
 
 #include <rapidjson/document.h>
-#include <rapidjson/stringbuffer.h>
-#include <rapidjson/writer.h>
 #include <glpk.h>
 
 #include <kora/utils.h>
