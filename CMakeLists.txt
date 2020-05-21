@@ -22,7 +22,7 @@ target_include_directories(sh_kora PUBLIC
 
 if (BUILD_EM)
     target_compile_definitions(sh_kora PUBLIC BUILD_EM)
-    target_link_options(sh_kora PUBLIC --bind)
+    target_link_options(sh_kora PUBLIC --bind -s ALLOW_MEMORY_GROWTH=1)
     target_sources(sh_kora PUBLIC em.cpp)
 else ()
     target_sources(sh_kora PUBLIC main.cpp)

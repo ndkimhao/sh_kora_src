@@ -154,4 +154,8 @@ str Model::fba() const {
     return ret;
 }
 
+str Model::fva() const {
+    return kora::str();
+}
+
 }

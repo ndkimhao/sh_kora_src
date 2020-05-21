@@ -19,10 +19,12 @@ int sz(const T &c) { return int(c.size()); }
 
 }
 
-#ifndef NDEBUG
+#include <iostream>
+#include <fmt/format.h>
 
-#  include <iostream>
-#  include <fmt/format.h>
+#define LOG(f, ...) std::cerr << fmt::format(f "\n", ##__VA_ARGS__)
+
+#ifndef NDEBUG
 
 #  define DBG(f, ...) std::cerr << fmt::format(f "\n", ##__VA_ARGS__)
 
