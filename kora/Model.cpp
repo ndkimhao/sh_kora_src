@@ -148,6 +148,15 @@ str Model::fba() const {
         }
         doc.AddMember("fluxes", fluxes, doc.GetAllocator());
 
+
+        Value show_prices;
+        show_prices.SetObject();
+        for (const auto &m : metabolites_) {
+            double v = glp_get_row_dual(lp, m.row_id());
+            show_prices.AddMember(StringRef(m.sid().c_str()), v, doc.GetAllocator());
+        }
+        doc.AddMember("show_prices", show_prices, doc.GetAllocator());
+
         StringBuffer buffer;
         Writer<StringBuffer> writer(buffer);
         doc.Accept(writer);
