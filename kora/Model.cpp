@@ -119,14 +119,23 @@ str Model::fba() const {
 
     glp_smcp parm;
     glp_init_smcp(&parm);
-    parm.msg_lev = GLP_MSG_OFF;
+    //parm.msg_lev = GLP_MSG_ERR;
+    parm.presolve = GLP_ON;
     int ecode = glp_simplex(lp, &parm);
-    assert(ecode == 0);
+    CHECK(ecode == 0 || ecode == GLP_ENOPFS || ecode == GLP_ENODFS);
+    int status = glp_get_status(lp);
+    if (ecode == GLP_ENOPFS || ecode == GLP_ENODFS || status == GLP_UNDEF) {
+        fprintf(stderr, "LP solver returns GLP_UNDEF, turn off presolve and retry\n");
+        parm.presolve = GLP_OFF;
+        glp_adv_basis(lp, 0);
+        ecode = glp_simplex(lp, &parm);
+        CHECK(ecode == 0);
+        status = glp_get_status(lp);
+    }
 
     str ret;
     {
         using namespace rapidjson;
-        int status = glp_get_status(lp);
         double objective_value = glp_get_obj_val(lp);
 
         Document doc;
