@@ -9,6 +9,8 @@
 
 #include <utility>
 
+struct glp_prob;
+
 namespace kora {
 
 class Metabolite {
@@ -17,7 +19,11 @@ public:
 
     [[nodiscard]] int id() const { return id_; }
 
+    [[nodiscard]] int row_id() const { return id_ + 1; }
+
     [[nodiscard]] const str &sid() const { return sid_; }
+
+    void setup_row(glp_prob *lp) const;
 
 private:
     int id_;

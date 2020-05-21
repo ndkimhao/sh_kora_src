@@ -14,6 +14,9 @@ namespace kora {
 using str = std::string;
 template<typename T> using vec = std::vector<T>;
 
+template<typename T>
+int sz(const T &c) { return int(c.size()); }
+
 }
 
 #ifndef NDEBUG
@@ -30,6 +33,7 @@ template<typename T> using vec = std::vector<T>;
 #endif
 
 #include <cassert>
+
 #define CHECK(...) assert(__VA_ARGS__)
 
 #endif //SH_KORA_COMMON_H
