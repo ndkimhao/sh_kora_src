@@ -136,7 +136,7 @@ str Model::fba() const {
             double fwd = glp_get_col_prim(lp, r.fwd_id()), rev = glp_get_col_prim(lp, r.rev_id());
             fluxes.AddMember(StringRef(r.sid().c_str()), fwd - rev, doc.GetAllocator());
         }
-        doc.AddMember("fluxes", fluxes, doc.GetAllocator());
+        doc.AddMember("fluxes", std::move(fluxes), doc.GetAllocator());
 
 
         Value show_prices;
@@ -145,7 +145,7 @@ str Model::fba() const {
             double v = glp_get_row_dual(lp, m.row_id());
             show_prices.AddMember(StringRef(m.sid().c_str()), v, doc.GetAllocator());
         }
-        doc.AddMember("show_prices", show_prices, doc.GetAllocator());
+        doc.AddMember("show_prices", std::move(show_prices), doc.GetAllocator());
 
         ret = to_json(doc);
     }
@@ -193,9 +193,13 @@ str Model::fva(FvaOpts opts) const {
         ind.resize(1), val.resize(1);
         for (const Reaction &r : reactions_) {
             double c = r.obj_coeff();
-            if (c != 0) {
+            if (c != 0.0) {
                 ind.emplace_back(r.fwd_id()), val.emplace_back(c);
                 ind.emplace_back(r.rev_id()), val.emplace_back(-c);
+            }
+            if (r.obj_coeff() != 0.0) {
+                glp_set_obj_coef(lp, r.fwd_id(), 0);
+                glp_set_obj_coef(lp, r.rev_id(), 0);
             }
         }
         ind.emplace_back(obj_col), val.emplace_back(-1.0);
@@ -203,7 +207,68 @@ str Model::fva(FvaOpts opts) const {
         glp_set_mat_row(lp, obj_row, sz(ind) - 1, ind.data(), val.data());
     }
 
-    return kora::str();
+    tsl::robin_map<str, double> res_min, res_max;
+    res_min.reserve(opts.reactions.size()), res_max.reserve(opts.reactions.size());
+    for (int _dir = 0; _dir < 2; ++_dir) {
+        int dir = (_dir == 0) ? GLP_MIN : GLP_MAX;
+        glp_set_obj_dir(lp, dir);
+        bool first_run = true;
+
+        auto &res = (dir == GLP_MIN) ? res_min : res_max;
+        for (const Reaction &r : reactions_) {
+            glp_set_obj_coef(lp, r.fwd_id(), 1.0);
+            glp_set_obj_coef(lp, r.rev_id(), -1.0);
+
+            parm.msg_lev = GLP_MSG_ERR;
+            if (first_run) {
+                parm.presolve = GLP_ON;
+                glp_adv_basis(lp, 0);
+                first_run = false;
+            } else {
+                parm.presolve = GLP_OFF;
+            }
+            ecode = glp_simplex(lp, &parm);
+            CHECK(ecode == 0 || ecode == GLP_ENOPFS || ecode == GLP_ENODFS);
+            status = glp_get_status(lp);
+            if (ecode == GLP_ENOPFS || ecode == GLP_ENODFS || status == GLP_UNDEF) {
+                fprintf(stderr, "FVA: LP solver returns GLP_UNDEF, retry\n");
+                glp_adv_basis(lp, 0);
+                parm.presolve = GLP_ON;
+                ecode = glp_simplex(lp, &parm);
+                CHECK(ecode == 0);
+                status = glp_get_status(lp);
+            }
+
+            CHECK(status == GLP_OPT);
+            double objval = glp_get_obj_val(lp);
+            res[r.sid()] = objval;
+
+            glp_set_obj_coef(lp, r.fwd_id(), 0.0);
+            glp_set_obj_coef(lp, r.rev_id(), 0.0);
+        }
+    }
+
+    {
+        using namespace rapidjson;
+        Document doc;
+        doc.SetObject();
+
+        Value amin;
+        amin.SetObject();
+        amin.MemberReserve(res_min.size(), doc.GetAllocator());
+        for (const auto &p : res_min)
+            amin.AddMember(StringRef(p.first.c_str()), p.second, doc.GetAllocator());
+        doc.AddMember("minimum", std::move(amin), doc.GetAllocator());
+
+        Value amax;
+        amax.SetObject();
+        amax.MemberReserve(res_max.size(), doc.GetAllocator());
+        for (const auto &p : res_max)
+            amax.AddMember(StringRef(p.first.c_str()), p.second, doc.GetAllocator());
+        doc.AddMember("maximum", std::move(amax), doc.GetAllocator());
+
+        return to_json(doc);
+    }
 }
 
 }
