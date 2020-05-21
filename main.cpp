@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
     if(type == "fba")
         res = m.fba();
     else
-        res = m.fva({});
+        res = m.fva({{}});
     std::cout << res;
     if (argc >= 3) {
         std::ofstream ofs(argv[3]);

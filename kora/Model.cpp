@@ -156,6 +156,7 @@ str Model::fba() const {
 
 str Model::fva(FvaOpts opts) const {
     CHECK(0 <= opts.fraction_of_optimum && opts.fraction_of_optimum <= 1);
+    if (opts.reactions.empty()) for (const Reaction &r : reactions_) opts.reactions.push_back(r.sid());
     glp_prob *lp = glp_create_prob();
     glp_set_obj_dir(lp, GLP_MAX);
 
@@ -181,6 +182,8 @@ str Model::fva(FvaOpts opts) const {
                                ecode, status));
     }
     double objective_value = glp_get_obj_val(lp);
+    const double tol = 1.0e-9;
+    objective_value = floor(objective_value / tol) * tol;
 
     int obj_col = glp_add_cols(lp, 1);
     glp_set_col_name(lp, obj_col, "fva_old_objective");
@@ -215,7 +218,8 @@ str Model::fva(FvaOpts opts) const {
         bool first_run = true;
 
         auto &res = (dir == GLP_MIN) ? res_min : res_max;
-        for (const Reaction &r : reactions_) {
+        for (const str &sid : opts.reactions) {
+            const Reaction &r = reactions_.at(get_reaction_id(sid));
             glp_set_obj_coef(lp, r.fwd_id(), 1.0);
             glp_set_obj_coef(lp, r.rev_id(), -1.0);
 
@@ -239,8 +243,12 @@ str Model::fva(FvaOpts opts) const {
                 status = glp_get_status(lp);
             }
 
-            CHECK(status == GLP_OPT);
+            CHECK(status == GLP_OPT || status == GLP_INFEAS || status == GLP_NOFEAS);
             double objval = glp_get_obj_val(lp);
+            if (status != GLP_OPT) {
+                fprintf(stderr, "Non optimal answer for reaction %s (dir=%d, status=%d)\n",
+                        r.sid().c_str(), dir, status);
+            }
             res[r.sid()] = objval;
 
             glp_set_obj_coef(lp, r.fwd_id(), 0.0);
