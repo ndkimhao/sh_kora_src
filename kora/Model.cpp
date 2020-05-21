@@ -126,7 +126,10 @@ str Model::fba() const {
         glp_set_mat_col(lp, r.rev_id(), sz(mc), ind.data(), val.data());
     }
 
-    int ecode = glp_simplex(lp, nullptr);
+    glp_smcp parm;
+    glp_init_smcp(&parm);
+    parm.msg_lev = GLP_MSG_OFF;
+    int ecode = glp_simplex(lp, &parm);
     assert(ecode == 0);
 
     str ret;
