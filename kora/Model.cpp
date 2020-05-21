@@ -7,6 +7,8 @@
 #include <fstream>
 
 #include <rapidjson/document.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
 #include <glpk.h>
 
 namespace kora {
@@ -79,6 +81,26 @@ int Model::get_metabolites_id(const str &sid) const {
     return it->second;
 }
 
+static const char *glp_stt_to_str(int s) {
+    switch (s) {
+        case GLP_OPT:
+            return "optimal";
+        case GLP_FEAS:
+            return "feasible";
+        case GLP_INFEAS:
+            return "infeasible";
+        case GLP_NOFEAS:
+            return "no feasible solution";
+        case GLP_UNBND:
+            return "unbounded solution";
+        case GLP_UNDEF:
+            return "undefined";
+        default:
+            assert(0);
+    }
+    return "";
+}
+
 str Model::fba() const {
     glp_prob *lp = glp_create_prob();
     glp_set_obj_dir(lp, GLP_MAX);
@@ -105,11 +127,36 @@ str Model::fba() const {
     }
 
     int ecode = glp_simplex(lp, nullptr);
-    DBG("ecode = {}", ecode);
     assert(ecode == 0);
 
+    str ret;
+    {
+        using namespace rapidjson;
+        int status = glp_get_status(lp);
+        double objective_value = glp_get_obj_val(lp);
+
+        Document doc;
+        doc.SetObject();
+        doc.AddMember("status", StringRef(glp_stt_to_str(status)), doc.GetAllocator());
+        doc.AddMember("objective_value", objective_value, doc.GetAllocator());
+
+        Value fluxes;
+        fluxes.SetObject();
+        for (const auto &r : reactions_) {
+            double fwd = glp_get_col_prim(lp, r.fwd_id()), rev = glp_get_col_prim(lp, r.rev_id());
+            fluxes.AddMember(StringRef(r.sid().c_str()), fwd - rev, doc.GetAllocator());
+        }
+        doc.AddMember("fluxes", fluxes, doc.GetAllocator());
+
+        StringBuffer buffer;
+        Writer<StringBuffer> writer(buffer);
+        doc.Accept(writer);
+
+        ret = buffer.GetString();
+    }
+
     glp_delete_prob(lp);
-    return "ret";
+    return ret;
 }
 
 }
