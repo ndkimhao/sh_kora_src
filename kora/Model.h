@@ -15,8 +15,6 @@ namespace kora {
 
 class Model {
 public:
-    void load_from_file(const str &path);
-
     void load_from_json(str json);
 
     str fba() const;
