@@ -10,6 +10,8 @@
 #include <memory>
 #include <rapidjson/document.h>
 
+struct glp_prob;
+
 namespace kora {
 
 str json_err(const char *msg);
@@ -27,6 +29,10 @@ std::string format(const std::string &format, Args ... args) {
     ret.resize(ret.size() - 1);
     return ret;
 }
+
+const double DINF = 1e300;
+
+void col_bnds(glp_prob *lp, int j, double lb, double ub);
 
 }
 

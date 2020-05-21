@@ -19,7 +19,12 @@ public:
 
     [[nodiscard]] str fba() const;
 
-    [[nodiscard]] str fva() const;
+    struct FvaOpts {
+        vec<str> reactions;
+        double fraction_of_optimum = 1.0;
+    };
+
+    [[nodiscard]] str fva(FvaOpts opts) const;
 
 protected:
     [[nodiscard]] int get_reaction_id(const str &sid) const;

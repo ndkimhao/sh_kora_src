@@ -8,6 +8,7 @@
 #include <utility>
 #include <string>
 #include <vector>
+#include <cassert>
 
 namespace kora {
 
@@ -17,9 +18,9 @@ template<typename T> using vec = std::vector<T>;
 template<typename T>
 int sz(const T &c) { return int(c.size()); }
 
+
 #if defined BUILD_EM || !defined NDEBUG
 
-#include <cassert>
 #define CHECK(expr) assert(expr)
 
 #else

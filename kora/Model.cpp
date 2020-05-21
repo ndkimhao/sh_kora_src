@@ -154,7 +154,55 @@ str Model::fba() const {
     return ret;
 }
 
-str Model::fva() const {
+str Model::fva(FvaOpts opts) const {
+    CHECK(0 <= opts.fraction_of_optimum && opts.fraction_of_optimum <= 1);
+    glp_prob *lp = glp_create_prob();
+    glp_set_obj_dir(lp, GLP_MAX);
+
+    glp_add_rows(lp, sz(metabolites_));
+    for (const Metabolite &m : metabolites_) m.setup_row(lp);
+
+    glp_add_cols(lp, sz(reactions_) * 2);
+    for (const Reaction &r : reactions_) r.setup_column(lp);
+
+    vec<int> ind;
+    vec<double> val;
+    for (const Reaction &r : reactions_) r.fill_column_coeffs(lp, ind, val);
+
+    glp_smcp parm;
+    glp_init_smcp(&parm);
+    //parm.msg_lev = GLP_MSG_ERR;
+    parm.presolve = GLP_ON;
+    int ecode = glp_simplex(lp, &parm);
+    CHECK(ecode == 0 || ecode == GLP_ENOPFS || ecode == GLP_ENODFS);
+    int status = glp_get_status(lp);
+    if (ecode == GLP_ENOPFS || ecode == GLP_ENODFS || status != GLP_OPT) {
+        return json_err(format("There is no optimal solution for the chosen objective (ecode=%d, status=%d)",
+                               ecode, status));
+    }
+    double objective_value = glp_get_obj_val(lp);
+
+    int obj_col = glp_add_cols(lp, 1);
+    glp_set_col_name(lp, obj_col, "fva_old_objective");
+    col_bnds(lp, obj_col, opts.fraction_of_optimum * objective_value, objective_value);
+
+    int obj_row = glp_add_rows(lp, 1);
+    glp_set_row_name(lp, obj_row, "fva_old_objective_constraint");
+    glp_set_row_bnds(lp, obj_row, GLP_FX, 0, 0);
+    {
+        ind.resize(1), val.resize(1);
+        for (const Reaction &r : reactions_) {
+            double c = r.obj_coeff();
+            if (c != 0) {
+                ind.emplace_back(r.fwd_id()), val.emplace_back(c);
+                ind.emplace_back(r.rev_id()), val.emplace_back(-c);
+            }
+        }
+        ind.emplace_back(obj_col), val.emplace_back(-1.0);
+        CHECK(ind.size() == val.size());
+        glp_set_mat_row(lp, obj_row, sz(ind) - 1, ind.data(), val.data());
+    }
+
     return kora::str();
 }
 

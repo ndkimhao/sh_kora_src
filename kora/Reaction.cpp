@@ -6,22 +6,9 @@
 
 #include <glpk.h>
 
+#include <kora/utils.h>
+
 namespace kora {
-
-const double DINF = 1e300;
-
-void col_bnds(glp_prob *lp, int j, double lb, double ub) {
-    CHECK(lb <= ub);
-    int type = -1;
-    if (lb == -DINF && ub == DINF) type = GLP_FR;
-    else if (lb != -DINF && ub != DINF) type = (lb == ub) ? GLP_FX : GLP_DB;
-    else if (lb != -DINF) type = GLP_LO;
-    else if (ub != DINF) type = GLP_UP;
-    else
-        CHECK(0);
-
-    glp_set_col_bnds(lp, j, type, lb, ub);
-}
 
 void Reaction::setup_column(glp_prob *lp) const {
     glp_set_col_name(lp, fwd_id(), sid().c_str());

@@ -7,6 +7,8 @@
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 
+#include <glpk.h>
+
 using namespace rapidjson;
 
 namespace kora {
@@ -28,6 +30,19 @@ str to_json(const rapidjson::Document &doc) {
     Writer<StringBuffer> writer(buffer);
     doc.Accept(writer);
     return buffer.GetString();
+}
+
+void col_bnds(glp_prob *lp, int j, double lb, double ub) {
+    CHECK(lb <= ub);
+    int type = -1;
+    if (lb == -DINF && ub == DINF) type = GLP_FR;
+    else if (lb != -DINF && ub != DINF) type = (lb == ub) ? GLP_FX : GLP_DB;
+    else if (lb != -DINF) type = GLP_LO;
+    else if (ub != DINF) type = GLP_UP;
+    else
+        CHECK(0);
+
+    glp_set_col_bnds(lp, j, type, lb, ub);
 }
 
 }
