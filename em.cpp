@@ -12,7 +12,8 @@ using namespace kora;
 
 str analyze_fba(str json) {
     Model m;
-    m.load_from_json(move(json));
+    str err = m.load_from_json(move(json));
+    if (!err.empty()) return err;
     return m.fba();
 }
 

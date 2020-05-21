@@ -8,6 +8,7 @@
 #include <utility>
 #include <string>
 #include <vector>
+#include <cassert>
 
 namespace kora {
 
@@ -19,23 +20,13 @@ int sz(const T &c) { return int(c.size()); }
 
 }
 
-#include <iostream>
-#include <fmt/format.h>
+extern void __assert_fail(const char *__assertion, const char *__file,
+                          unsigned int __line, const char *__function)
+noexcept __attribute__ ((__noreturn__));
 
-#define LOG(f, ...) std::cerr << fmt::format(f "\n", ##__VA_ARGS__)
-
-#ifndef NDEBUG
-
-#  define DBG(f, ...) std::cerr << fmt::format(f "\n", ##__VA_ARGS__)
-
-#else
-
-#  define DBG(...)
-
-#endif
-
-#include <cassert>
-
-#define CHECK(...) assert(__VA_ARGS__)
+#define CHECK(expr)                            \
+     (static_cast <bool> (expr)                \
+      ? void (0)                            \
+      : __assert_fail (#expr, __FILE__, __LINE__, __PRETTY_FUNCTION__))
 
 #endif //SH_KORA_COMMON_H

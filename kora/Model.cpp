@@ -9,13 +9,17 @@
 #include <rapidjson/writer.h>
 #include <glpk.h>
 
+#include <kora/utils.h>
+
 namespace kora {
 
-void Model::load_from_json(str json) {
+str Model::load_from_json(str json) {
     using namespace rapidjson;
 
     Document doc;
     doc.ParseInsitu(json.data());
+    if (!doc.IsObject())
+        return json_err("Model is not an object / Parse error");
 
     {
         const auto &am = doc["metabolites"].GetArray();
@@ -40,7 +44,11 @@ void Model::load_from_json(str json) {
             vec<Reaction::MCoeff> mids;
             mids.reserve(am.MemberCount());
             for (const auto &m : am) {
-                mids.emplace_back(get_metabolites_id(m.name.GetString()), m.value.GetDouble());
+                int mid = get_metabolites_id(m.name.GetString());
+                if (mid == -1)
+                    return json_err(format("Metabolite %s not found for reaction %s",
+                                           m.name.GetString(), sid.c_str()));
+                mids.emplace_back(mid, m.value.GetDouble());
             }
             double obj = 0;
             if (r.HasMember("objective_coefficient"))
@@ -50,18 +58,18 @@ void Model::load_from_json(str json) {
             id++;
         }
     }
+
+    return "";
 }
 
 int Model::get_reaction_id(const str &sid) const {
     const auto it = map_reactions_.find(sid);
-    CHECK(it != map_reactions_.end());
-    return it->second;
+    return it != map_reactions_.end() ? it->second : -1;
 }
 
 int Model::get_metabolites_id(const str &sid) const {
     const auto it = map_metabolites_.find(sid);
-    CHECK(it != map_metabolites_.end());
-    return it->second;
+    return it != map_metabolites_.end() ? it->second : -1;
 }
 
 static const char *glp_stt_to_str(int s) {
@@ -143,11 +151,7 @@ str Model::fba() const {
         }
         doc.AddMember("show_prices", show_prices, doc.GetAllocator());
 
-        StringBuffer buffer;
-        Writer<StringBuffer> writer(buffer);
-        doc.Accept(writer);
-
-        ret = buffer.GetString();
+        ret = to_json(doc);
     }
 
     glp_delete_prob(lp);
