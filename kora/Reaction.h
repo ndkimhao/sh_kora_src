@@ -47,7 +47,9 @@ public:
 
     [[nodiscard]] double obj_coeff() const { return obj_coeff_; }
 
-    void setup_column(glp_prob *gl) const;
+    void setup_column(glp_prob *lp) const;
+
+    void fill_column_coeffs(glp_prob *lp, vec<int> &ind, vec<double> &val) const;
 
 private:
     int id_;

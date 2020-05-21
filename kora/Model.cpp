@@ -104,18 +104,7 @@ str Model::fba() const {
 
     vec<int> ind;
     vec<double> val;
-    for (const Reaction &r : reactions_) {
-        const auto &mc = r.mcoeffs();
-        ind.resize(sz(mc) + 1), val.resize(sz(mc) + 1);
-        int i = 1;
-        for (const auto &p : mc) {
-            ind[i] = p.mid + 1, val[i] = p.coeff;
-            i++;
-        }
-        glp_set_mat_col(lp, r.fwd_id(), sz(mc), ind.data(), val.data());
-        for (double &v : val) v = -v;
-        glp_set_mat_col(lp, r.rev_id(), sz(mc), ind.data(), val.data());
-    }
+    for (const Reaction &r : reactions_) r.fill_column_coeffs(lp, ind, val);
 
     glp_smcp parm;
     glp_init_smcp(&parm);

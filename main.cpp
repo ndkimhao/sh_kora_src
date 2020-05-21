@@ -23,6 +23,11 @@ str load_file(const str &path) {
 int main(int argc, char *argv[]) {
     Model m;
     m.load_from_json(load_file(argv[1]));
-    std::cout << m.fba();
+    str res = m.fba();
+    std::cout << res;
+    if (argc >= 3) {
+        std::ofstream ofs(argv[2]);
+        ofs << res;
+    }
     return 0;
 }

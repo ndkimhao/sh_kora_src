@@ -43,4 +43,17 @@ void Reaction::setup_column(glp_prob *lp) const {
     }
 }
 
+void Reaction::fill_column_coeffs(glp_prob *lp, vec<int> &ind, vec<double> &val) const {
+    const auto &mc = mcoeffs();
+    ind.resize(sz(mc) + 1), val.resize(sz(mc) + 1);
+    int i = 1;
+    for (const auto &p : mc) {
+        ind[i] = p.mid + 1, val[i] = p.coeff;
+        i++;
+    }
+    glp_set_mat_col(lp, fwd_id(), sz(mc), ind.data(), val.data());
+    for (double &v : val) v = -v;
+    glp_set_mat_col(lp, rev_id(), sz(mc), ind.data(), val.data());
+}
+
 }
